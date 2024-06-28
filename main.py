@@ -4,51 +4,59 @@ from bitalino import BITalino
 from thingsboard import send_data_to_thingsboard, save_json_to_file
 
 if __name__ == '__main__':
-    device = BITalino()
+	device = BITalino()
+    
+	macAddress = "84:BA:20:AE:B8:4B"
+	SamplingRate = 1000
+	nSamples = 1000
+    
+	# Connect to bluetooth device and set Sampling Rate
+	device.open(macAddress, SamplingRate)
+    
+	#set battery threshold
+	th = device.battery(20)
+	print ("battery: ", th)
+    
+	#get BITalino version
+	BITversion = device.version()
+	print ("version: ", BITversion)
+    
+	#Start Acquisition in Analog Channels 0 and 3
+	device.start([0, 1, 2, 3, 4])
 
-    macAddress = "84:BA:20:AE:B8:4B"
-    samplingRate = 1000
-    nSamples = 10
-    device_token = "VXtaqkTAamdm2Bg7c19X"
+	try:
+		while True:
+			dataAcquired = device.read(nSamples)
+			collected_data = []
+			maximo = 0
+			
+			print(f"Shape of dataAcquired: {dataAcquired.shape}")
+			
+			"""
+			A0 = dataAcquired[5, :]
+			for i in range(nSamples):
+				if int(dataAcquired[5][i]) > maximo:
+					maximo =  int(dataAcquired[5][i])
+            """
+			
+			for i in range(nSamples):
+				telemetry_data = {
+					"timestamp": datetime.now().isoformat(),
+					"A0": int(dataAcquired[5][i]),  # Canal A1 analógico
+					"A1": int(dataAcquired[6][i]),  # Canal A2 analógico
+					"A2": int(dataAcquired[7][i]),  # Canal A3 analógico
+					"A3": int(dataAcquired[8][i]),  # Canal A4 analógico
+					"A5": int(dataAcquired[9][i])  # Canal A6 analógico
+				}
+				collected_data.append(telemetry_data)
+			
+			A0 = dataAcquired[5, :]
+			print(A0)
+			#send_data_to_thingsboard(telemetry_data, device_token)
+			save_json_to_file(collected_data, filename="data.json")
+			print(datetime.now().isoformat())
 
-    if device.open(macAddress, samplingRate) == -1:
-        print("Failed to open device")
-        exit(1)
-
-    if device.battery(20) == -1:
-        print("Failed to set battery threshold")
-        exit(1)
-
-    BITversion = device.version()
-    print("version: ", BITversion)
-
-    if device.start([0, 1, 2, 3, 5]) == -1:
-        print("Failed to start acquisition")
-        exit(1)
-
-    try:
-        while True:
-            dataAcquired = device.read(nSamples)
-            
-            for i in range(nSamples):
-                telemetry_data = {
-                    "timestamp": datetime.now().isoformat(),
-                    "A0": int(dataAcquired[i][5]),  # Canal A1 analógico
-                    #"A1": int(dataAcquired[i][6]),  # Canal A2 analógico
-                    #"A2": int(dataAcquired[i][7]),  # Canal A3 analógico
-                    #"A3": int(dataAcquired[i][8]),  # Canal A4 analógico
-                    #"A5": int(dataAcquired[i][10])  # Canal A6 analógico
-                }
-                print ("A1:", dataAcquired[i][5])
-
-                #send_data_to_thingsboard(telemetry_data, device_token)
-                save_json_to_file(telemetry_data, filename="data.json")
-                
-                
-                
-                time.sleep(1)
-
-    except KeyboardInterrupt:
-        device.stop()
-        device.close()
-        print("Acquisition stopped and device closed")
+	except KeyboardInterrupt:
+		device.stop()
+		device.close()
+		print("Acquisition stopped and device closed")
