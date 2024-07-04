@@ -7,7 +7,7 @@ import csv
 import queue
 
 # Tamaño del buffer circular
-BUFFER_SIZE = 10000
+BUFFER_SIZE = 10000000
 
 def read_bitalino_data(device, data_queue, condition, sampling_rate, n_samples):
     while True:
@@ -17,10 +17,12 @@ def read_bitalino_data(device, data_queue, condition, sampling_rate, n_samples):
             for i in range(n_samples):
                 while data_queue.full():
                     condition.wait()  # Espera hasta que haya espacio disponible en la queue
-                data_queue.put((datetime.now().isoformat(), data_acquired[5, i], data_acquired[6, i], data_acquired[7, i], data_acquired[8, i], data_acquired[10, i]))
+                data_queue.put((datetime.now().isoformat(), data_acquired[5, i], data_acquired[6, i], data_acquired[7, i], data_acquired[8, i], 0.2))
                 condition.notify()  # Notifica que hay un nuevo dato disponible
+                time.sleep(0.001)  # Espera 1 ms antes de la próxima iteración
         elapsed_time = time.time() - start_time
-        print(f"Read thread elapsed time: {elapsed_time:.4f} seconds")
+        #print(f"Read thread elapsed time: {elapsed_time:.4f} seconds")
+        
 
 def write_data_to_csv(data_queue, condition, csv_processed_set):
     measurement_number = 1
@@ -38,7 +40,7 @@ def write_data_to_csv(data_queue, condition, csv_processed_set):
                 csv_processed_set.add(timestamp)
                 condition.notify()  # Notifica que se ha procesado un dato
             elapsed_time = time.time() - start_time
-            print(f"Write thread elapsed time: {elapsed_time:.4f} seconds")
+            #print(f"Write thread elapsed time: {elapsed_time:.4f} seconds")
 
 def send_data_to_thingsboard_task(data_queue, condition, device_token, tb_processed_set):
     while True:
@@ -58,7 +60,7 @@ def send_data_to_thingsboard_task(data_queue, condition, device_token, tb_proces
             tb_processed_set.add(timestamp)
             condition.notify()  # Notifica que se ha enviado un dato
         elapsed_time = time.time() - start_time
-        print(f"Thingsboard thread elapsed time: {elapsed_time:.4f} seconds")
+        #print(f"Thingsboard thread elapsed time: {elapsed_time:.4f} seconds")
 
 def remove_processed_data(data_queue, condition, csv_processed_set, tb_processed_set):
 	while True:

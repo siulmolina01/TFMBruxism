@@ -12,7 +12,7 @@ def send_data_to_thingsboard(telemetry_data, device_token):
             "X-Authorization": f"Bearer {device_token}"
         }
         response = requests.post(thingsboard_url, headers=headers, json=telemetry_data)
-        print("Data posted to ThingsBoard:", response.text)
+        #print("Data posted to ThingsBoard:", response.text)
     except Exception as e:
         print("Exception:", e)
 
