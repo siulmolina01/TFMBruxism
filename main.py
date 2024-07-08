@@ -29,19 +29,41 @@ if __name__ == '__main__':
 		while True:
 			dataAcquired = device.read(nSamples)
 			collected_data = []
-			#maximo = 0
+			maximoA0 = 0
+			maximoA1 = 0
+			maximoA2 = 0
+			maximoA3 = 0
 			
 			print(f"Shape of dataAcquired: {dataAcquired.shape}")
-			"""
+			
 			A0 = dataAcquired[5, :]
 			for i in range(nSamples):
-				if int(dataAcquired[5][i]) > maximo:
-					maximo =  int(dataAcquired[5][i])
-            """
+				if int(dataAcquired[5][i]) > maximoA0:
+					maximoA0 =  int(dataAcquired[5][i])
+				if int(dataAcquired[6][i]) > maximoA0:
+					maximoA1 =  int(dataAcquired[6][i])
+				if int(dataAcquired[7][i]) > maximoA0:
+					maximoA2 =  int(dataAcquired[7][i])
+				if int(dataAcquired[8][i]) > maximoA0:
+					maximoA3 =  int(dataAcquired[8][i])
+					
+            
+			
+			telemetry_data = {
+				#"timestamp": datetime.now().isoformat(),
+				"A0": maximoA0,  # Canal A1 analógico
+				"A1": maximoA1,  # Canal A2 analógico
+				"A2": maximoA2,  # Canal A3 analógico
+				"A3": maximoA3,  # Canal A4 analógico
+				#"A5": maximo,  # Canal A6 analógico
+				"A5": 0.2
+			}
+			send_data_to_thingsboard(telemetry_data, device_token)
+			"""
 			
 			for i in range(nSamples):
 				telemetry_data = {
-					"timestamp": datetime.now().isoformat(),
+					#"timestamp": datetime.now().isoformat(),
 					"A0": int(dataAcquired[5][i]),  # Canal A1 analógico
 					"A1": int(dataAcquired[6][i]),  # Canal A2 analógico
 					"A2": int(dataAcquired[7][i]),  # Canal A3 analógico
@@ -50,9 +72,7 @@ if __name__ == '__main__':
 					"A5": 0.2
 				}
 				send_data_to_thingsboard(telemetry_data, device_token)
-			
-			
-			#save_json_to_file(collected_data, filename="data.json")
+			"""
 
 	except KeyboardInterrupt:
 		device.stop()

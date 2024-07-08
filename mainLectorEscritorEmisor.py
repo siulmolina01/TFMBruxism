@@ -5,6 +5,7 @@ from bitalino import BITalino
 from thingsboard import send_data_to_thingsboard, save_json_to_file
 import csv
 import queue
+from datetime import datetime, timedelta
 
 # Tamaño del buffer circular
 BUFFER_SIZE = 10000000
@@ -26,21 +27,33 @@ def read_bitalino_data(device, data_queue, condition, sampling_rate, n_samples):
 
 def write_data_to_csv(data_queue, condition, csv_processed_set):
     measurement_number = 1
-    with open('data.csv', mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["Measurement", "Timestamp", "A0", "A1", "A2", "A3", "A5"])
-        while True:
-            start_time = time.time()
-            with condition:
-                while data_queue.empty():
-                    condition.wait()  # Espera hasta que haya datos disponibles en la queue
-                timestamp, A0, A1, A2, A3, A5 = data_queue.queue[0]
-                writer.writerow([measurement_number, timestamp, A0, A1, A2, A3, A5])
-                measurement_number += 1
-                csv_processed_set.add(timestamp)
-                condition.notify()  # Notifica que se ha procesado un dato
-            elapsed_time = time.time() - start_time
-            #print(f"Write thread elapsed time: {elapsed_time:.4f} seconds")
+    start_time = datetime.now()
+    file_index = 1
+    file = open(f'data_{file_index}.csv', mode='w', newline='')
+    writer = csv.writer(file)
+    writer.writerow(["Measurement", "Timestamp", "A0", "A1", "A2", "A3", "A5"])
+    
+    while True:
+        with condition:
+            while data_queue.empty():
+                condition.wait()  # Espera hasta que haya datos disponibles en la queue
+
+            timestamp, A0, A1, A2, A3, A5 = data_queue.queue[0]
+            
+            # Check if an hour has passed and change the file if necessary
+            if datetime.now() - start_time >= timedelta(hours=1):
+                file.close()
+                file_index += 1
+                file = open(f'data_{file_index}.csv', mode='w', newline='')
+                writer = csv.writer(file)
+                writer.writerow(["Measurement", "Timestamp", "A0", "A1", "A2", "A3", "A5"])
+                start_time = datetime.now()  # Reset the start time
+            
+            writer.writerow([measurement_number, timestamp, A0, A1, A2, A3, A5])
+            measurement_number += 1
+            csv_processed_set.add(timestamp)
+            condition.notify()  # Notifica que se ha procesado un dato
+
 
 def send_data_to_thingsboard_task(data_queue, condition, device_token, tb_processed_set):
     while True:
@@ -111,3 +124,4 @@ if __name__ == '__main__':
 		device.stop()
 		device.close()
 		print("Acquisition stopped and device closed")
+		file.close()
